@@ -49,9 +49,29 @@ end
 
 
 function structured(inputoutputs::Vector{Tuple{Int64,String}})::LKDProgram
-    # synthesizes an LKD program that matches the given input/output pairs
-    # inputoutputs is a vector of (input, output) pairs
+    first_input, first_output = inputoutputs[1]
+    L = length(first_output)
 
-    # Question 2
-    # YOUR CODE HERE
+    # Enumerate all (k1,k2,k3,k4) with each ki in {2..5} that sum to L
+    for k1 in 2:5, k2 in 2:5, k3 in 2:5
+        k4 = L - k1 - k2 - k3
+        (k4 < 2 || k4 > 5) && continue
+
+        # Deduce augend values from the first example using this split
+        splits = (0, k1, k1+k2, k1+k2+k3, L)
+        ks = (k1, k2, k3, k4)
+        augs = ntuple(i -> positive_modulus(
+            parse(Int64, first_output[splits[i]+1:splits[i+1]]) - first_input,
+            10^ks[i]), 4)
+
+        candidate = (LKDTerm(k1, augs[1]), LKDTerm(k2, augs[2]),
+                     LKDTerm(k3, augs[3]), LKDTerm(k4, augs[4]))
+
+        # Verify against all examples
+        if all(interpretLKDProgram(candidate, x) == y for (x, y) in inputoutputs)
+            return candidate
+        end
+    end
+
+    error("No solution exists")
 end
